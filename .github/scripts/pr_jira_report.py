@@ -71,8 +71,16 @@ def with_query(url: str, params: Dict[str, str]) -> str:
     return f"{url}?{urllib.parse.urlencode(params)}"
 
 
-def collect_pr_jira_keys(owner: str, repo: str, pr_number: int, token: str, pr_body: str) -> Set[str]:
+def collect_pr_jira_keys(
+    owner: str,
+    repo: str,
+    pr_number: int,
+    token: str,
+    pr_title: str,
+    pr_body: str,
+) -> Set[str]:
     keys = set()
+    keys |= extract_jira_keys(pr_title)
     keys |= extract_jira_keys(pr_body)
 
     issue_comments_url = with_query(
@@ -127,7 +135,8 @@ def main() -> None:
 
     for pr in pulls:
         pr_number = pr.get("number")
-        title = (pr.get("title") or "").replace("|", " ").strip()
+        pr_title = pr.get("title") or ""
+        title = pr_title.replace("|", " ").strip()
         pr_url = pr.get("html_url") or ""
         pr_body = pr.get("body") or ""
 
@@ -137,7 +146,7 @@ def main() -> None:
 
         updated_at = pr.get("updated_at") or "-"
 
-        keys = collect_pr_jira_keys(owner, repo, int(pr_number), token, pr_body)
+        keys = collect_pr_jira_keys(owner, repo, int(pr_number), token, pr_title, pr_body)
         ticket_cell = build_ticket_cell(keys, jira_base_url)
 
         lines.append(
