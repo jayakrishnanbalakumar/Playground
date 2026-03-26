@@ -28,6 +28,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+          PR_BASE_BRANCH: ${{ vars.PR_BASE_BRANCH }}
         run: python .github/scripts/pr_jira_report.py
 
       - name: Commit updated report
