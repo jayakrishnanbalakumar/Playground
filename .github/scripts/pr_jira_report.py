@@ -1,3 +1,5 @@
+"""Generate a markdown report that maps repository PRs to Jira ticket keys."""
+
 import json
 import os
 import re
