@@ -1,3 +1,5 @@
+"""Generate a markdown report that maps repository PRs to Jira ticket keys."""
+
 import json
 import os
 import re
@@ -11,6 +13,7 @@ JIRA_KEY_PATTERN = re.compile(r"\b[A-Z][A-Z0-9]{1,9}-\d+\b")
 
 
 def parse_link_header(link_header: str) -> Optional[str]:
+    """Return the URL for the next page from a GitHub Link header."""
     if not link_header:
         return None
 
@@ -25,6 +28,7 @@ def parse_link_header(link_header: str) -> Optional[str]:
 
 
 def github_get(url: str, token: str) -> Tuple[List[Dict], Optional[str]]:
+    """Fetch one GitHub API page and return JSON data with the next page URL."""
     headers = {
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {token}",
@@ -40,6 +44,7 @@ def github_get(url: str, token: str) -> Tuple[List[Dict], Optional[str]]:
 
 
 def paginate(url: str, token: str) -> List[Dict]:
+    """Follow paginated GitHub API responses and collect all items."""
     all_items: List[Dict] = []
     next_url: Optional[str] = url
     while next_url:
@@ -49,12 +54,14 @@ def paginate(url: str, token: str) -> List[Dict]:
 
 
 def extract_jira_keys(text: str) -> Set[str]:
+    """Extract unique Jira-style keys from free-form text."""
     if not text:
         return set()
     return set(JIRA_KEY_PATTERN.findall(text))
 
 
 def build_ticket_cell(keys: Iterable[str], jira_base_url: str) -> str:
+    """Build the markdown table cell content for Jira ticket references."""
     unique_sorted = sorted(set(keys))
     if not unique_sorted:
         return "-"
@@ -68,6 +75,7 @@ def build_ticket_cell(keys: Iterable[str], jira_base_url: str) -> str:
 
 
 def with_query(url: str, params: Dict[str, str]) -> str:
+    """Append URL-encoded query parameters to a base URL."""
     return f"{url}?{urllib.parse.urlencode(params)}"
 
 
@@ -79,6 +87,7 @@ def collect_pr_jira_keys(
     pr_title: str,
     pr_body: str,
 ) -> Set[str]:
+    """Collect Jira keys from a PR title/body and its issue and review comments."""
     keys = set()
     keys |= extract_jira_keys(pr_title)
     keys |= extract_jira_keys(pr_body)
@@ -103,6 +112,7 @@ def collect_pr_jira_keys(
 
 
 def main() -> None:
+    """Generate the PR-to-Jira markdown report and write it to reports/."""
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     repo_full_name = os.environ.get("REPO", "").strip()
     jira_base_url = os.environ.get("JIRA_BASE_URL", "").strip()
