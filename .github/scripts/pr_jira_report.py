@@ -1,9 +1,11 @@
+"""Generate a markdown report that maps repository PRs to Jira ticket keys."""
+
 import json
 import os
 import re
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 GITHUB_API = "https://api.github.com"
@@ -77,6 +79,36 @@ def with_query(url: str, params: Dict[str, str]) -> str:
     return f"{url}?{urllib.parse.urlencode(params)}"
 
 
+def parse_input_date(date_text: str, name: str) -> datetime:
+    """Parse a YYYY-MM-DD input date into a UTC datetime at midnight."""
+    try:
+        return datetime.strptime(date_text, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be in YYYY-MM-DD format") from exc
+
+
+def parse_github_datetime(value: str) -> datetime:
+    """Parse GitHub ISO-8601 timestamps such as 2026-03-27T10:20:30Z."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def is_within_date_range(
+    updated_at: str,
+    from_date: Optional[datetime],
+    to_date_exclusive: Optional[datetime],
+) -> bool:
+    """Return True when updated_at falls within optional date boundaries."""
+    if not updated_at:
+        return False
+
+    updated_dt = parse_github_datetime(updated_at)
+    if from_date and updated_dt < from_date:
+        return False
+    if to_date_exclusive and updated_dt >= to_date_exclusive:
+        return False
+    return True
+
+
 def collect_pr_jira_keys(
     owner: str,
     repo: str,
@@ -115,6 +147,8 @@ def main() -> None:
     repo_full_name = os.environ.get("REPO", "").strip()
     jira_base_url = os.environ.get("JIRA_BASE_URL", "").strip()
     pr_base_branch = os.environ.get("PR_BASE_BRANCH", "").strip()
+    from_date_text = os.environ.get("FROM_DATE", "").strip()
+    to_date_text = os.environ.get("TO_DATE", "").strip()
 
     if not token:
         raise RuntimeError("GITHUB_TOKEN is required")
@@ -122,6 +156,15 @@ def main() -> None:
         raise RuntimeError("REPO must look like owner/repository")
 
     owner, repo = repo_full_name.split("/", 1)
+
+    from_date: Optional[datetime] = None
+    to_date_exclusive: Optional[datetime] = None
+    if from_date_text:
+        from_date = parse_input_date(from_date_text, "FROM_DATE")
+    if to_date_text:
+        to_date_exclusive = parse_input_date(to_date_text, "TO_DATE") + timedelta(days=1)
+    if from_date and to_date_exclusive and from_date >= to_date_exclusive:
+        raise RuntimeError("FROM_DATE must be earlier than or equal to TO_DATE")
 
     pulls_url = with_query(
         f"{GITHUB_API}/repos/{owner}/{repo}/pulls",
@@ -144,6 +187,11 @@ def main() -> None:
             },
         )
     pulls = paginate(pulls_url, token)
+    pulls = [
+        pr
+        for pr in pulls
+        if is_within_date_range(pr.get("updated_at") or "", from_date, to_date_exclusive)
+    ]
 
     lines: List[str] = []
     lines.append("# Daily PR to Jira Report")

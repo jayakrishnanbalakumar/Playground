@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
+    inputs:
+      from_date:
+        description: "Start date (UTC, YYYY-MM-DD)"
+        required: false
+        type: string
+      to_date:
+        description: "End date (UTC, YYYY-MM-DD)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -29,6 +38,8 @@ jobs:
           REPO: ${{ github.repository }}
           JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
           PR_BASE_BRANCH: ${{ vars.PR_BASE_BRANCH }}
+          FROM_DATE: ${{ github.event.inputs.from_date }}
+          TO_DATE: ${{ github.event.inputs.to_date }}
         run: python .github/scripts/pr_jira_report.py
 
       - name: Commit updated report
