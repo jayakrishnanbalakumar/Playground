@@ -106,6 +106,7 @@ def main() -> None:
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     repo_full_name = os.environ.get("REPO", "").strip()
     jira_base_url = os.environ.get("JIRA_BASE_URL", "").strip()
+    pr_base_branch = os.environ.get("PR_BASE_BRANCH", "").strip()
 
     if not token:
         raise RuntimeError("GITHUB_TOKEN is required")
@@ -123,6 +124,17 @@ def main() -> None:
             "per_page": "100",
         },
     )
+    if pr_base_branch:
+        pulls_url = with_query(
+            f"{GITHUB_API}/repos/{owner}/{repo}/pulls",
+            {
+                "state": "all",
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": "100",
+                "base": pr_base_branch,
+            },
+        )
     pulls = paginate(pulls_url, token)
 
     lines: List[str] = []
