@@ -36,8 +36,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
-          PR_BASE_BRANCH: ${{ vars.PR_BASE_BRANCH }}
+          #JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+          #PR_BASE_BRANCH: ${{ vars.PR_BASE_BRANCH }}
+          JIRA_BASE_URL: "https://jaybal.atlassian.net/"
+          PR_BASE_BRANCH: "main"
           FROM_DATE: ${{ github.event.inputs.from_date }}
           TO_DATE: ${{ github.event.inputs.to_date }}
         run: python .github/scripts/pr_jira_report.py
