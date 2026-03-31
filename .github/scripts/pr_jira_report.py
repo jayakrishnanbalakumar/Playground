@@ -92,6 +92,25 @@ def parse_github_datetime(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
+def resolve_date_range(
+    from_date_text: str,
+    to_date_text: str,
+    now_utc: datetime,
+) -> Tuple[datetime, datetime]:
+    """Resolve input dates, defaulting to Jan 1 through today when omitted."""
+    start_of_year = datetime(now_utc.year, 1, 1, tzinfo=timezone.utc)
+    start_date = parse_input_date(from_date_text, "FROM_DATE") if from_date_text else start_of_year
+    end_date_inclusive = (
+        parse_input_date(to_date_text, "TO_DATE") if to_date_text else now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    )
+    end_date_exclusive = end_date_inclusive + timedelta(days=1)
+
+    if start_date >= end_date_exclusive:
+        raise RuntimeError("FROM_DATE must be earlier than or equal to TO_DATE")
+
+    return start_date, end_date_exclusive
+
+
 def is_within_date_range(
     updated_at: str,
     from_date: Optional[datetime],
@@ -143,6 +162,7 @@ def collect_pr_jira_keys(
 
 def main() -> None:
     """Generate the PR-to-Jira markdown report and write it to reports/."""
+    now_utc = datetime.now(timezone.utc)
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     repo_full_name = os.environ.get("REPO", "").strip()
     jira_base_url = os.environ.get("JIRA_BASE_URL", "").strip()
@@ -156,15 +176,7 @@ def main() -> None:
         raise RuntimeError("REPO must look like owner/repository")
 
     owner, repo = repo_full_name.split("/", 1)
-
-    from_date: Optional[datetime] = None
-    to_date_exclusive: Optional[datetime] = None
-    if from_date_text:
-        from_date = parse_input_date(from_date_text, "FROM_DATE")
-    if to_date_text:
-        to_date_exclusive = parse_input_date(to_date_text, "TO_DATE") + timedelta(days=1)
-    if from_date and to_date_exclusive and from_date >= to_date_exclusive:
-        raise RuntimeError("FROM_DATE must be earlier than or equal to TO_DATE")
+    from_date, to_date_exclusive = resolve_date_range(from_date_text, to_date_text, now_utc)
 
     pulls_url = with_query(
         f"{GITHUB_API}/repos/{owner}/{repo}/pulls",
@@ -196,7 +208,7 @@ def main() -> None:
     lines: List[str] = []
     lines.append("# Daily PR to Jira Report")
     lines.append("")
-    lines.append(f"Generated (UTC): {datetime.now(timezone.utc).isoformat()}")
+    lines.append(f"Generated (UTC): {now_utc.isoformat()}")
     lines.append("")
     lines.append("| PR | Title | State | Jira Tickets | Updated |")
     lines.append("| --- | --- | --- | --- | --- |")
