@@ -1,9 +1,10 @@
 # Daily PR to Jira Report
 
-Generated (UTC): 2026-03-30T04:48:54.437991+00:00
+Generated (UTC): 2026-03-31T04:39:13.289167+00:00
 
 | PR | Title | State | Jira Tickets | Updated |
 | --- | --- | --- | --- | --- |
+| [#10](https://github.com/jayakrishnanbalakumar/Playground/pull/10) | Made the Jira and base branch static instead of reading from git variables | merged | - | 2026-03-30T14:42:48Z |
 | [#8](https://github.com/jayakrishnanbalakumar/Playground/pull/8) | Added FROM/TO date filtering for PRs | merged | - | 2026-03-27T19:07:30Z |
 | [#6](https://github.com/jayakrishnanbalakumar/Playground/pull/6) | Updated comments | merged | - | 2026-03-27T18:39:34Z |
 | [#5](https://github.com/jayakrishnanbalakumar/Playground/pull/5) | Release1 updates | merged | - | 2026-03-27T18:17:59Z |
