@@ -7,7 +7,7 @@ on:
     inputs:
       pr_base_branch: 
         description: "Branch for which report to be genrated"
-        required: false
+        required: true
         type: string
       from_date:
         description: "Start date (UTC, YYYY-MM-DD)"
