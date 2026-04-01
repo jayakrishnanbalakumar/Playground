@@ -2,7 +2,7 @@ name: Daily PR Jira Report
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "40 23 * * *"
   workflow_dispatch:
     inputs:
       pr_base_branch: 
