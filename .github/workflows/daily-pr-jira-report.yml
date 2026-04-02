@@ -1,16 +1,20 @@
-name: Daily PR Jira Report
+name: PMO PR-Jira Report
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "00 15 * * *"
   workflow_dispatch:
     inputs:
+      pr_base_branch: 
+        description: "Branch for which report to be generated (optional for manual runs,uses repo default branch)"
+        required: false
+        type: string 
       from_date:
-        description: "Start date (UTC, YYYY-MM-DD)"
+        description: "Start date (UTC, YYYY-MM-DD), Default is start of year"
         required: false
         type: string
       to_date:
-        description: "End date (UTC, YYYY-MM-DD)"
+        description: "End date (UTC, YYYY-MM-DD),  Default is today"
         required: false
         type: string
 
@@ -22,11 +26,13 @@ permissions:
 jobs:
   build-report:
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: "ReportGenBranch"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+       
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -37,11 +43,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           #JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
-          #PR_BASE_BRANCH: ${{ vars.PR_BASE_BRANCH }}
-          JIRA_BASE_URL: "https://jaybal.atlassian.net/"
-          PR_BASE_BRANCH: "main"
+          JIRA_BASE_URL: "https://jira.mdsol.com/"
+          PR_BASE_BRANCH: ${{ github.event.inputs.pr_base_branch ||  github.event.repository.default_branch }}
           FROM_DATE: ${{ github.event.inputs.from_date }}
-          TO_DATE: ${{ github.event.inputs.to_date }}
+          TO_DATE: ${{ github.event.inputs.to_date }}          
         run: python .github/scripts/pr_jira_report.py
 
       - name: Commit updated report
@@ -51,4 +56,4 @@ jobs:
           git add reports/pr-jira-report.md
           git diff --cached --quiet && exit 0
           git commit -m "chore: update daily PR Jira report"
-          git push
+          git push origin HEAD:${TARGET_BRANCH}
