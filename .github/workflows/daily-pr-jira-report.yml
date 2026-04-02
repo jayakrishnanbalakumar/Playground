@@ -1,9 +1,6 @@
 name: PMO PR-Jira Report
 
 on:
-  #push:
-  #  branches: 
-  #    - feature/pmo-pr-report
   schedule:
     - cron: "00 15 * * *"
   workflow_dispatch:
@@ -29,11 +26,13 @@ permissions:
 jobs:
   build-report:
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: "ReportGenBranch"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+       
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -57,4 +56,4 @@ jobs:
           git add reports/pr-jira-report.md
           git diff --cached --quiet && exit 0
           git commit -m "chore: update daily PR Jira report"
-          git push
+          git push origin HEAD:${TARGET_BRANCH}
