@@ -1,8 +1,6 @@
 name: PMO PR-Jira Report
 
 on:
-  schedule:
-    - cron: "00 15 * * *"
   workflow_dispatch:
     inputs:
       pr_base_branch: 
