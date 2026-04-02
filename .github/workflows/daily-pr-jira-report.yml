@@ -26,9 +26,7 @@ permissions:
 jobs:
   build-report:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
-    env:
-      TARGET_BRANCH: "ReportGenBranch"
+    if: github.ref == 'refs/heads/R06-Release-Branch'
 
     steps:
       - name: Checkout
@@ -57,4 +55,4 @@ jobs:
           git add reports/pr-jira-report.md
           git diff --cached --quiet && exit 0
           git commit -m "chore: update daily PR Jira report"
-          git push origin HEAD:${TARGET_BRANCH}
+          git push origin 
