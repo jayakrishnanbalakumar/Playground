@@ -26,7 +26,11 @@ permissions:
 jobs:
   build-report:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
+    if: |
+      github.ref != 'refs/heads/main' &&
+      github.ref != 'refs/heads/master' &&
+      github.ref != 'refs/heads/develop' &&
+      !startsWith(github.ref, 'refs/tags/')
     env:
       TARGET_BRANCH: "ReportGenBranch"
 
