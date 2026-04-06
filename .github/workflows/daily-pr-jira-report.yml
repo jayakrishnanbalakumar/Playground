@@ -26,7 +26,6 @@ permissions:
 jobs:
   build-report:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/R06-Release-Branch'
     env:
       TARGET_BRANCH: "ReportGenBranch"
 
