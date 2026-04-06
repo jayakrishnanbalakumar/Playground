@@ -1,4 +1,4 @@
-"""Generate a markdown report that maps repository PRs to Jira ticket keys."""
+"""Generate an Excel report that maps repository PRs to Jira ticket keys."""
 
 import json
 import os
@@ -8,8 +8,12 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
+
 GITHUB_API = "https://api.github.com"
-JIRA_KEY_PATTERN = re.compile(r"\b[A-Z][A-Z0-9]{1,9}-\d+\b")
+JIRA_KEY_PATTERN = re.compile(r"\bMCC-\d+\b")
 
 
 def parse_link_header(link_header: str) -> Optional[str]:
@@ -60,18 +64,23 @@ def extract_jira_keys(text: str) -> Set[str]:
     return set(JIRA_KEY_PATTERN.findall(text))
 
 
-def build_ticket_cell(keys: Iterable[str], jira_base_url: str) -> str:
-    """Build the markdown table cell content for Jira ticket references."""
+def build_ticket_text(keys: Iterable[str]) -> str:
+    """Build the Excel cell text for Jira ticket references."""
     unique_sorted = sorted(set(keys))
     if not unique_sorted:
         return "-"
-
-    clean_base = jira_base_url.strip().rstrip("/")
-    if clean_base:
-        return ", ".join(
-            f"[{key}]({clean_base}/browse/{key})" for key in unique_sorted
-        )
     return ", ".join(unique_sorted)
+
+
+def set_column_widths(worksheet) -> None:
+    """Set workbook column widths based on populated cell values."""
+    for column_cells in worksheet.columns:
+        max_length = 0
+        column_letter = get_column_letter(column_cells[0].column)
+        for cell in column_cells:
+            cell_value = "" if cell.value is None else str(cell.value)
+            max_length = max(max_length, len(cell_value))
+        worksheet.column_dimensions[column_letter].width = min(max_length + 2, 60)
 
 
 def with_query(url: str, params: Dict[str, str]) -> str:
@@ -161,7 +170,7 @@ def collect_pr_jira_keys(
 
 
 def main() -> None:
-    """Generate the PR-to-Jira markdown report and write it to reports/."""
+    """Generate the PR-to-Jira Excel report and write it to reports/."""
     now_utc = datetime.now(timezone.utc)
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     repo_full_name = os.environ.get("REPO", "").strip()
@@ -205,13 +214,17 @@ def main() -> None:
         if is_within_date_range(pr.get("updated_at") or "", from_date, to_date_exclusive)
     ]
 
-    lines: List[str] = []
-    lines.append("# Daily PR to Jira Report")
-    lines.append("")
-    lines.append(f"Generated (UTC): {now_utc.isoformat()}")
-    lines.append("")
-    lines.append("| PR | Title | State | Jira Tickets | Updated |")
-    lines.append("| --- | --- | --- | --- | --- |")
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "PR Jira Report"
+    worksheet.append(["Generated (UTC)", now_utc.isoformat()])
+    worksheet.append([])
+    headers = ["PR", "Title", "State", "Jira Tickets", "Updated"]
+    worksheet.append(headers)
+
+    for cell in worksheet[3]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(vertical="top")
 
     for pr in pulls:
         pr_number = pr.get("number")
@@ -227,16 +240,36 @@ def main() -> None:
         updated_at = pr.get("updated_at") or "-"
 
         keys = collect_pr_jira_keys(owner, repo, int(pr_number), token, pr_title, pr_body)
-        ticket_cell = build_ticket_cell(keys, jira_base_url)
+        ticket_cell = build_ticket_text(keys)
 
-        lines.append(
-            f"| [#{pr_number}]({pr_url}) | {title} | {state} | {ticket_cell} | {updated_at} |"
-        )
+        worksheet.append([f"#{pr_number}", title, state, ticket_cell, updated_at])
+        row_index = worksheet.max_row
+
+        pr_cell = worksheet.cell(row=row_index, column=1)
+        if pr_url:
+            pr_cell.hyperlink = pr_url
+            pr_cell.style = "Hyperlink"
+
+        jira_cell = worksheet.cell(row=row_index, column=4)
+        clean_base = jira_base_url.strip().rstrip("/")
+        if clean_base and len(keys) == 1:
+            jira_key = next(iter(keys))
+            jira_cell.hyperlink = f"{clean_base}/browse/{jira_key}"
+            jira_cell.style = "Hyperlink"
+
+        for column_index in range(1, 6):
+            worksheet.cell(row=row_index, column=column_index).alignment = Alignment(
+                vertical="top",
+                wrap_text=True,
+            )
+
+    worksheet.freeze_panes = "A4"
+    worksheet.auto_filter.ref = f"A3:E{worksheet.max_row}"
+    set_column_widths(worksheet)
 
     os.makedirs("reports", exist_ok=True)
-    output_path = os.path.join("reports", "pr-jira-report.md")
-    with open(output_path, "w", encoding="utf-8") as report_file:
-        report_file.write("\n".join(lines) + "\n")
+    output_path = os.path.join("reports", "pr-jira-report.xlsx")
+    workbook.save(output_path)
 
 
 if __name__ == "__main__":
