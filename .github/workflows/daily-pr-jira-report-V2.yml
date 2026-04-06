@@ -34,14 +34,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Generate report
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          #JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
-          JIRA_BASE_URL: "https://jira.mdsol.com/"
-          PR_BASE_BRANCH: ${{ github.event.inputs.pr_base_branch ||  github.event.repository.default_branch }}
-          FROM_DATE: ${{ github.event.inputs.from_date }}
-          TO_DATE: ${{ github.event.inputs.to_date }}          
-        run: python .github/scripts/pr_jira_report_v2.py
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-jira-report
+          path: reports/pr-jira-report.md
+          if-no-files-found: error
 
