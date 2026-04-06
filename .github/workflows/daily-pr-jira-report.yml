@@ -1,8 +1,6 @@
 name: PMO PR-Jira Report
 
 on:
-  schedule:
-    - cron: "00 15 * * *"
   workflow_dispatch:
     inputs:
       pr_base_branch: 
@@ -19,16 +17,13 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
   issues: read
 
 jobs:
   build-report:
     runs-on: ubuntu-latest
-    env:
-      TARGET_BRANCH: "ReportGenBranch"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,6 +32,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install report dependencies
+        run: python -m pip install openpyxl
 
       - name: Generate report
         env:
