@@ -38,6 +38,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pr-jira-report
-          path: reports/pr-jira-report.md
+          path: reports/pr-jira-report.xlsx
           if-no-files-found: error
 
