@@ -50,11 +50,9 @@ jobs:
           TO_DATE: ${{ github.event.inputs.to_date }}          
         run: python .github/scripts/pr_jira_report.py
 
-      - name: Commit updated report
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add reports/pr-jira-report.md
-          git diff --cached --quiet && exit 0
-          git commit -m "chore: update daily PR Jira report"
-          git push origin HEAD:${TARGET_BRANCH}
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-jira-report
+          path: reports/pr-jira-report.xlsx
+          if-no-files-found: error
