@@ -13,7 +13,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
 GITHUB_API = "https://api.github.com"
-JIRA_KEY_PATTERN = re.compile(r"\bJPM-\d+\b")
+JIRA_KEY_PATTERN = re.compile(r"\bMCC-\d+\b")
 
 
 def parse_link_header(link_header: str) -> Optional[str]:
@@ -138,34 +138,13 @@ def is_within_date_range(
 
 
 def collect_pr_jira_keys(
-    owner: str,
-    repo: str,
-    pr_number: int,
-    token: str,
     pr_title: str,
     pr_body: str,
 ) -> Set[str]:
-    """Collect Jira keys from a PR title/body and its issue and review comments."""
+    """Collect Jira keys from a PR title and body."""
     keys = set()
     keys |= extract_jira_keys(pr_title)
     keys |= extract_jira_keys(pr_body)
-
-    issue_comments_url = with_query(
-        f"{GITHUB_API}/repos/{owner}/{repo}/issues/{pr_number}/comments",
-        {"per_page": "100"},
-    )
-    issue_comments = paginate(issue_comments_url, token)
-    for comment in issue_comments:
-        keys |= extract_jira_keys(comment.get("body", ""))
-
-    review_comments_url = with_query(
-        f"{GITHUB_API}/repos/{owner}/{repo}/pulls/{pr_number}/comments",
-        {"per_page": "100"},
-    )
-    review_comments = paginate(review_comments_url, token)
-    for comment in review_comments:
-        keys |= extract_jira_keys(comment.get("body", ""))
-
     return keys
 
 
@@ -249,7 +228,7 @@ def main() -> None:
 
         updated_at = pr.get("updated_at") or "-"
 
-        keys = collect_pr_jira_keys(owner, repo, int(pr_number), token, pr_title, pr_body)
+        keys = collect_pr_jira_keys(pr_title, pr_body)
         ticket_cell = build_ticket_text(keys)
 
         worksheet.append([f"#{pr_number}", title, state, ticket_cell, updated_at])
