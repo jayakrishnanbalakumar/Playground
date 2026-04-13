@@ -207,12 +207,22 @@ def main() -> None:
                 "base": pr_base_branch,
             },
         )
-    pulls = paginate(pulls_url, token)
-    pulls = [
-        pr
-        for pr in pulls
-        if is_within_date_range(pr.get("updated_at") or "", from_date, to_date_exclusive)
-    ]
+    # Fetch PRs page by page, stopping once we reach PRs older than from_date.
+    pulls: List[Dict] = []
+    next_url = pulls_url
+    # GitHub timestamps are ISO 8601 UTC; lexicographic comparison matches chronological order.
+    from_cutoff = from_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+    stop_pagination = False
+    while next_url and not stop_pagination:
+        page_items, next_url = github_get(next_url, token)
+        for pr in page_items:
+            updated_at_str = pr.get("updated_at") or ""
+            # If this PR is older than from_date, all subsequent PRs will be older too.
+            if updated_at_str and updated_at_str < from_cutoff:
+                stop_pagination = True
+                break
+            if is_within_date_range(updated_at_str, from_date, to_date_exclusive):
+                pulls.append(pr)
 
     workbook = Workbook()
     worksheet = workbook.active
