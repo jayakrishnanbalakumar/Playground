@@ -13,7 +13,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
 GITHUB_API = "https://api.github.com"
-JIRA_KEY_PATTERN = re.compile(r"\bJPM-\d+\b")
+JIRA_KEY_PATTERN = re.compile(r"\bMCC-\d+\b")
 
 
 def parse_link_header(link_header: str) -> Optional[str]:
@@ -166,26 +166,17 @@ def main() -> None:
     owner, repo = repo_full_name.split("/", 1)
     from_date, to_date_exclusive = resolve_date_range(from_date_text, to_date_text, now_utc)
 
-    pulls_url = with_query(
-        f"{GITHUB_API}/repos/{owner}/{repo}/pulls",
-        {
-            "state": "all",
-            "sort": "updated",
-            "direction": "desc",
-            "per_page": "5",
-        },
-    )
-    if pr_base_branch:
-        pulls_url = with_query(
-            f"{GITHUB_API}/repos/{owner}/{repo}/pulls",
-            {
-                "state": "all",
-                "sort": "updated",
-                "direction": "desc",
-                "per_page": "100",
-                "base": pr_base_branch,
-            },
-        )
+    params = {
+    "state": "all",
+    "sort": "updated",
+    "direction": "desc",
+    "per_page": "100",
+}
+if pr_base_branch:
+    params["base"] = pr_base_branch
+
+pulls_url = with_query(f"{GITHUB_API}/repos/{owner}/{repo}/pulls", params)
+     
     # Fetch PRs page by page, stopping once we reach PRs older than from_date.
     pulls: List[Dict] = []
     next_url = pulls_url
