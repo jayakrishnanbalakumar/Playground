@@ -172,7 +172,7 @@ def main() -> None:
             "state": "all",
             "sort": "updated",
             "direction": "desc",
-            "per_page": "100",
+            "per_page": "5",
         },
     )
     if pr_base_branch:
