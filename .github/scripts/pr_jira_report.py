@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 GITHUB_API = "https://api.github.com"
-JIRA_KEY_PATTERN = re.compile(r"\bMCC-\d+\b")
+JIRA_KEY_PATTERN = re.compile(r"\bJPM-\d+\b")
 
 
 def parse_link_header(link_header: str) -> Optional[str]:
