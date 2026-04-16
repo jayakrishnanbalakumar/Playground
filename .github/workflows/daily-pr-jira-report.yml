@@ -51,5 +51,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pr-jira-report
-          path: reports/pr-jira-report.xlsx
+          path: reports/pr-jira-report.csv
           if-no-files-found: error
