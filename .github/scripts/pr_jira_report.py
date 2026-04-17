@@ -13,7 +13,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
 GITHUB_API = "https://api.github.com"
-JIRA_KEY_PATTERN = re.compile(r"\bMCC-\d+\b")
+JIRA_KEY_PATTERN = re.compile(r"\bJPM-\d+\b")
 
 
 def parse_link_header(link_header: str) -> Optional[str]:
