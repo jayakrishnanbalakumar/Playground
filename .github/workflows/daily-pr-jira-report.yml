@@ -17,8 +17,10 @@ on:
         type: string
 
 permissions:
+  contents: read
   pull-requests: read
-  
+  issues: read
+
 jobs:
   build-report:
     runs-on: ubuntu-latest
@@ -49,5 +51,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pr-jira-report
-          path: reports/pr-jira-report.csv
+          path: reports/pr-jira-report.xlsx
           if-no-files-found: error
